@@ -57,13 +57,25 @@ end
 -- 主体功能 （压枪循环）
 function Main (event, arg, family)
     if event == "MOUSE_BUTTON_PRESSED" and arg == 1 and family == "mouse" then
+        -- 等待按键状态同步（最多等待50ms）
+        local waitCount = 0
+        while not IsMouseButtonPressed(1) and waitCount < 5 do
+            Sleep(10)
+            waitCount = waitCount + 1
+        end
+
+        -- 如果按键状态同步超时，取消压枪
+        if not IsMouseButtonPressed(1) then
+            OutputLogMessage("警告：左键状态同步超时，取消压枪\n")
+            return
+        end
+
         -- 启动前先获取一次 Y 轴位置
         local x, y = GetMousePosition()
         RunningCache.lastY = y
         ClearLog()
 
         while (IsStart() and IsPressed(1) and IsPressed(3)) do
-        -- while (IsStart() and IsPressed(1)) do
             -- ConsoleLog("-------------------------------")
             -- 调整偏差 ± userConfig.randomDeviation (px)
             RunningCache.deviationPX = math.max(
@@ -77,7 +89,7 @@ function Main (event, arg, family)
 
             -- 力度/移动距离 (px) (基础 + 偏差)
             local powerPX = GetRandomPower()
-            -- ConsoleLog(table.concat({ "力度/移动距离: ", power, "px" }))
+            -- ConsoleLog(table.concat({ "力度/移动距离: ", powerPX, "px" }))
 
             -- 移动鼠标
             MoveMouseRelative(0, powerPX)
